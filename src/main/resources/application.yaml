@@ -18,6 +18,6 @@ spring:
   datasource:
     driverClassName: org.postgresql.Driver
     #DB connection:
-    url: jdbc:postgresql://localhost:5432/workflow?stringtype=unspecified
+    url: jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified
     username: postgres
     password: postgres
