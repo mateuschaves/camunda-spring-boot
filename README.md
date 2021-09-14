@@ -1,50 +1,194 @@
-# Camunda Spring Boot Tutorial Lafayette
-This project is used as part of a video tutorial in order to show how you can use various features of Camunda in a spring boot application
+# Camunda Spring Boot
+Esse projeto foi desenvolvido como parte de uma atividade da disciplina de Tópicos Avançados em Engenharia de Software do curso de Sistemas de Informação na Universidade de Pernambuco campus Caruaru
 
 
-![Video Tutorial Badge](https://img.shields.io/badge/Tutorial%20Reference%20Project-Tutorials%20for%20getting%20started%20with%20Camunda-%2338A3E1)
-<img src="https://img.shields.io/badge/Camunda%20DevRel%20Project-Created%20by%20the%20Camunda%20Developer%20Relations%20team-0Ba7B9">
+# Instalação do Camunda
 
-You'll find the tutorial videos by clicking the image below
-
-[![Camunda Spring Boot Tutorial](http://img.youtube.com/vi/WCznCZxHZ9k/0.jpg)](https://www.youtube.com/watch?v=sgcSm7YneTs&list=PLJG25HlmvsOVssaiPmavxv3htN_dXS3BW&index=1)
-
-## What is this all about?
-When creating example projects I like to ensure that the examples I use are as close to real world use cases as possible and so in this example we'll be building a process in which we can help one of my favourite historical figures [Gilbert du Motier, Marquis de Lafayette](https://en.wikipedia.org/wiki/Gilbert_du_Motier,_Marquis_de_Lafayette) to do what he does best - get involved in revolutions! 
-
-This is broken up into 4 parts and in the end we're looking a process that will help Lafayette with a more efficient way to ruin things for the French and British monarchy. 
-
-![process](./src/main/resources/images/laffProcessDiagram.png)
-
-## What you will need 
-* [Java JDK 11](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html) so that you can run the Camunda Platform
-* [Camunda Modeler](https://camunda.com/download/modeler/) for building and deploying BPMN Models
-* An integrated development environment for Java like [IntelliJ IDEA](https://www.jetbrains.com/idea/download/) 
-
-## What will you learn?
-* How to setup a spring boot project with Camunda
-* Understanding the components of the project
-* How to create forms and link them to user tasks
-* How to write java classes that can be run by Service Tasks
-* How to configure an XOR gateway based on process data
-* How to configure non-interrupting timer events
-* How to trigger and catch BPMN errors thrown from Java Code
+1. Baixar o Camunda Community Edition no [site oficial](https://camunda.com/download/).
+2. Inicar o Camunda executando `start.bat` (Windows) ou `start.sh` (Linux)
+3. O camunda irá ficar disponível no endereço <http://localhost:8080/>
 
 
-### Part One: Lafayette's Departure 
-<span style="color:Orange">Using User tasks and Camunda Forms</span>.
-![LafayetteV1](./src/main/resources/images/LafayetteV1.png)
+# Configurando o projeto java ( Spring Boot )
+
+### Criar um projeto maven
+
+![img_1.png](img_1.png)
+
+### Adicionar as dependências do Camunda e do Spring Boot
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<modelVersion>4.0.0</modelVersion>
+<groupId>org.camunda.bpm.getstarted</groupId>
+<artifactId>loan-approval-spring-boot</artifactId>
+<version>0.0.1-SNAPSHOT</version>
+
+  <properties>
+    <camunda.spring-boot.version>7.15.0</camunda.spring-boot.version>
+    <spring-boot.version>2.4.4</spring-boot.version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.camunda.bpm.springboot</groupId>
+      <artifactId>camunda-bpm-spring-boot-starter-webapp</artifactId>
+      <version>${camunda.spring-boot.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.xml.bind</groupId>
+      <artifactId>jaxb-impl</artifactId>
+      <version>2.2.3</version>
+    </dependency>
+  </dependencies>
+
+   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring-boot.version}</version>
+        <configuration>
+          <layout>ZIP</layout>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
+```
+
+### Criar a classe `Main` para a aplicação Spring Boot
+
+```java
+package org.camunda.bpm.getstarted.loanapproval;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class WebappExampleProcessApplication {
+	public static void main(String... args) {
+		SpringApplication.run(WebappExampleProcessApplication.class, args);
+	}
+}
+```
+
+# Conexão com o banco de dados (PostgresSQL)
+
+### Criar uma pasta resources e dentro um arquivo chamado `application.yaml` com o seguinte conteudo
+
+```yaml
+camunda:
+  admin-user:
+    id: demo
+    password: demo
+  bpm:
+    database:
+      type: postgres
+    table-prefix: camunda.
+    schema-update: true
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  datasource:
+    driverClassName: org.postgresql.Driver
+    #DB connection:
+    url: jdbc:postgresql://localhost:5432/postgres?stringtype=unspecified
+    username: SEU_USUARIO
+    password: SUA_SENHA
+```
+
+### Criação de Formulários
+
+### Instalar o camunda modeler
+
+### Crie um processo
+![img_4.png](img_4.png)
+
+#### Para cada user task é possível criar um formulário
+
+![img_5.png](img_5.png)
+![img_6.png](img_6.png)
+
+### Os formulários poderão ser visualizados nas tasklist do camunda web
+
+![img_7.png](img_7.png)
 
 
-### Part Two: Lafayette Crosses the Ocean 
-<span style="color:Orange">Using Service Tasks, Java Classes and Gateways</span>.
-![LafayetteV2](./src/main/resources/images/LafayetteV2.png)
+# Integração com serviço externo
+
+### Criar uma classe que implementa a interface `JavaDelegate`
+
+```java
+package com.example.workflow;
 
 
-## Part Three: Lafayette Writes Home
-<span style="color:Orange">Using Timers and User Tasks</span>.
-![LafayetteV3](./src/main/resources/images/LafayetteV3.png)
+import org.camunda.bpm.engine.delegate.DelegateExecution;
+import org.camunda.bpm.engine.delegate.JavaDelegate;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import sun.net.www.http.HttpClient;
 
-## Part Four: Disaster at Sea for Lafayette
-<span style="color:Orange">Using Java to throw BPMN Error Events</span>.
-![LafayetteV4](./src/main/resources/images/LafayetteV4.png)
+import javax.inject.Named;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+
+@Named
+public class ExternalWebServiceDeletage implements JavaDelegate {
+    public void execute(DelegateExecution execution) throws Exception {
+        System.out.println(execution.getCurrentActivityName());
+        URL url = new URL("http://localhost:3000/logs");
+        URLConnection con = url.openConnection();
+        HttpURLConnection http = (HttpURLConnection)con;
+        http.setRequestMethod("POST");
+        http.setDoOutput(true);
+
+        byte[] out = ("{\"form\":\"" + execution.getCurrentActivityName() + "\",\"date\":\"" + new Date() + "\"}").getBytes(StandardCharsets.UTF_8);
+        int length = out.length;
+
+        http.setFixedLengthStreamingMode(length);
+        http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+        http.connect();
+        try(OutputStream os = http.getOutputStream()) {
+            os.write(out);
+        }
+    }
+}
+
+```
+
+
